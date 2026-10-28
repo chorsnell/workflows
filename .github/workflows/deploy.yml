@@ -6,6 +6,12 @@ on:
       app:
         type: string
         required: true
+      version:
+        # Release version (e.g. 1.4.2 or v1.4.2). When set, the image is also tagged :1.4.2 and :1.4 so a
+        # deploy can be pinned or rolled back to it. Every build is tagged :latest and :<commit sha>.
+        type: string
+        required: false
+        default: ''
 
 jobs:
   build:
@@ -22,13 +28,33 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
+      - id: tags
+        env:
+          IMAGE: ghcr.io/${{ github.repository }}
+          VERSION: ${{ inputs.version }}
+        run: |
+          v="${VERSION#v}"
+          {
+            echo 'list<<EOF'
+            echo "$IMAGE:latest"
+            echo "$IMAGE:$GITHUB_SHA"
+            if [ -n "$v" ]; then
+              echo "$IMAGE:$v"
+              echo "$IMAGE:${v%.*}"
+            fi
+            echo 'EOF'
+            echo "version=${v:-$GITHUB_SHA}"
+          } >> "$GITHUB_OUTPUT"
+
       - uses: docker/build-push-action@v6
         with:
           context: .
           push: true
-          tags: |
-            ghcr.io/${{ github.repository }}:latest
-            ghcr.io/${{ github.repository }}:${{ github.sha }}
+          tags: ${{ steps.tags.outputs.list }}
+          labels: |
+            org.opencontainers.image.version=${{ steps.tags.outputs.version }}
+            org.opencontainers.image.revision=${{ github.sha }}
+            org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}
 
   deploy:
     needs: build
