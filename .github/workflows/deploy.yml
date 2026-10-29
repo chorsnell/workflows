@@ -15,7 +15,7 @@ on:
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
     permissions:
       contents: read
       packages: write
@@ -58,9 +58,11 @@ jobs:
 
   deploy:
     needs: build
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
     steps:
-      - uses: tailscale/github-action@v4
+      # Hosted runners reach the Docker host over Tailscale; the self-hosted runner is already on the LAN.
+      - if: runner.environment == 'github-hosted'
+        uses: tailscale/github-action@v4
         with:
           oauth-client-id: ${{ secrets.TS_OAUTH_CLIENT_ID }}
           oauth-secret: ${{ secrets.TS_OAUTH_SECRET }}
@@ -70,7 +72,12 @@ jobs:
         env:
           KEY: ${{ secrets.DEPLOY_SSH_KEY }}
           APP: ${{ inputs.app }}
+          # docker-host is the Tailscale name; on the LAN use the host's address (override with the DEPLOY_HOST variable)
+          HOST: ${{ runner.environment == 'github-hosted' && 'docker-host' || vars.DEPLOY_HOST || '192.168.0.106' }}
         run: |
-          install -m 600 /dev/null key
-          printf '%s\n' "$KEY" > key
-          ssh -i key -o StrictHostKeyChecking=accept-new deploy@docker-host "$APP"
+          # The self-hosted runner keeps its workspace between jobs, so don't leave the key behind
+          key="$RUNNER_TEMP/deploy_key"
+          trap 'rm -f "$key"' EXIT
+          install -m 600 /dev/null "$key"
+          printf '%s\n' "$KEY" > "$key"
+          ssh -i "$key" -o StrictHostKeyChecking=accept-new deploy@"$HOST" "$APP"
