@@ -55,6 +55,9 @@ jobs:
             org.opencontainers.image.version=${{ steps.tags.outputs.version }}
             org.opencontainers.image.revision=${{ github.sha }}
             org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}
+          # Optional BuildKit secrets from the calling repo (needs `secrets: inherit`), one `id=value` per line,
+          # e.g. hots-dash's `uploader_signing_key=…`. Unset in a repo means no build secrets.
+          secrets: ${{ secrets.DOCKER_BUILD_SECRETS }}
 
   deploy:
     needs: build
