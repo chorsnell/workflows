@@ -1,0 +1,30 @@
+name: deploy
+# Builds the Docker image and deploys it to the Docker host. The release workflow starts this on the vX.Y.Z tag with
+# the version, so the image is tagged :X.Y.Z and :X.Y as well as :latest and :<sha>. Run it by hand (leave version
+# empty) to redeploy the current commit, or pick an older vX.Y.Z tag as the ref to roll back.
+#
+# Copied from chorsnell/workflows templates/deploy-docker.yml. Set `app` to the app's folder under /srv/apps on the
+# Docker host. Needs the DEPLOY_SSH_KEY secret (and DOCKER_BUILD_SECRETS if its build needs any).
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: Release version (X.Y.Z); empty to deploy this commit untagged
+        type: string
+        default: ''
+
+permissions:
+  contents: read
+  packages: write
+
+concurrency:
+  group: deploy
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    uses: chorsnell/workflows/.github/workflows/deploy.yml@main
+    secrets: inherit
+    with:
+      app: APP_FOLDER
+      version: ${{ inputs.version }}

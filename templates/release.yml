@@ -1,0 +1,54 @@
+name: release
+# Cut a release by hand: Actions → release → Run workflow (from main). Tick "Preview only" first to see the version
+# and changelog it would write. Everything it does is in chorsnell/workflows/.github/workflows/release.yml.
+#
+# Copied from chorsnell/workflows templates/release.yml. Keep the lines for this repo's kind and delete the rest:
+#   Go binary  → go_version_file, test, build, assets
+#   Docker app → test, deploy_workflow (and copy templates/deploy-docker.yml to .github/workflows/deploy.yml)
+#   Node app   → node_version, test (and build/assets if it ships files)
+on:
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: Preview only (show the next version and changelog, change nothing)
+        type: boolean
+        default: false
+      release_as:
+        description: Version bump (auto works it out from the commits)
+        type: choice
+        options: [auto, patch, minor, major]
+        default: auto
+
+permissions:
+  contents: write
+  actions: write
+  pull-requests: read
+
+jobs:
+  release:
+    uses: chorsnell/workflows/.github/workflows/release.yml@main
+    secrets: inherit
+    with:
+      dry_run: ${{ inputs.dry_run }}
+      release_as: ${{ inputs.release_as }}
+      # runs_on: self-hosted                   # runner label, if this repo's runner has a specific one
+
+      # --- Go binary ---
+      go_version_file: go.mod
+      test: go vet ./... && go test ./...
+      # VERSION is set to X.Y.Z; put the binaries in dist/
+      build: |
+        mkdir -p dist
+        for t in linux/amd64 linux/arm64 darwin/arm64 windows/amd64; do
+          os=${t%/*}; arch=${t#*/}; ext=; [ "$os" = windows ] && ext=.exe
+          GOOS=$os GOARCH=$arch CGO_ENABLED=0 go build -trimpath -ldflags "-s -w -X main.version=$VERSION" \
+            -o "dist/APP-$os-$arch$ext" ./cmd/APP
+        done
+      assets: dist/*
+
+      # --- Node app ---
+      # node_version: '22'
+      # test: npm ci && npm test
+
+      # --- Docker app (deployed to the Docker host) ---
+      # deploy_workflow: deploy.yml

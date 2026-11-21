@@ -1,0 +1,63 @@
+{
+  "bumpFiles": [
+    {
+      "filename": "VERSION",
+      "type": "plain-text"
+    }
+  ],
+  "packageFiles": [
+    {
+      "filename": "VERSION",
+      "type": "plain-text"
+    }
+  ],
+  "tagPrefix": "v",
+  "header": "# Changelog\n\nEvery release, newest first. Versions follow [semantic versioning](https://semver.org): a new major number for\nchanges that need you to do something, minor for new features, patch for fixes.\n",
+  "releaseCommitMessageFormat": "chore(release): {{currentTag}}",
+  "types": [
+    {
+      "type": "feat",
+      "section": "New"
+    },
+    {
+      "type": "fix",
+      "section": "Fixes"
+    },
+    {
+      "type": "perf",
+      "section": "Faster"
+    },
+    {
+      "type": "revert",
+      "section": "Reverted"
+    },
+    {
+      "type": "docs",
+      "hidden": true
+    },
+    {
+      "type": "chore",
+      "hidden": true
+    },
+    {
+      "type": "refactor",
+      "hidden": true
+    },
+    {
+      "type": "test",
+      "hidden": true
+    },
+    {
+      "type": "ci",
+      "hidden": true
+    },
+    {
+      "type": "build",
+      "hidden": true
+    },
+    {
+      "type": "style",
+      "hidden": true
+    }
+  ]
+}
